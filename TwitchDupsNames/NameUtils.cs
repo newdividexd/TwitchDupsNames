@@ -14,11 +14,15 @@ namespace TwitchDupsNames
         private readonly static Random Random = new Random();
 
         private static System.DateTime Last = System.DateTime.Now.AddMinutes(-1);
-        private static int Count;
+        private static int Count = 0;
         private static JObject Chatters;
 
         public static bool VerifyChatters()
         {
+            if (Config.Instance == null)
+            {
+                return false;
+            }
             if (Config.Instance.ChannelName.Length == 0)
             {
                 return false;
@@ -27,7 +31,6 @@ namespace TwitchDupsNames
             {
                 try
                 {
-                    Last = System.DateTime.Now;
                     var request = (HttpWebRequest)WebRequest.Create($"https://tmi.twitch.tv/group/user/{Config.Instance.ChannelName}/chatters");
                     request.AutomaticDecompression = DecompressionMethods.GZip;
 
@@ -39,6 +42,7 @@ namespace TwitchDupsNames
                         Chatters = result["chatters"] as JObject;
                         Count = result.Value<int>("chatter_count");
                     }
+                    Last = System.DateTime.Now;
                 } catch(Exception)
                 {
                     Debug.Log("TDN unable to get chatters for " + Config.Instance.ChannelName);
@@ -68,14 +72,21 @@ namespace TwitchDupsNames
 
         private static List<string> FlattenNames()
         {
-            var groups = Chatters.Children<JProperty>()
-                .Select(property => property.Value.Children()
-                .Select(token => token.Value<string>()));
+            try
+            {
+                var groups = Chatters.Children<JProperty>()
+                    .Select(property => property.Value.Children()
+                    .Select(token => token.Value<string>()));
 
-            return groups.Aggregate(new List<string>(), (list, group) => {
-                list.AddRange(group);
-                return list;
+                return groups.Aggregate(new List<string>(), (list, group) =>
+                {
+                    list.AddRange(group);
+                    return list;
                 });
+            } catch(Exception)
+            {
+                return new List<string>();
+            }
         }
 
         public static IEnumerable<string> GetNames(int amount)
