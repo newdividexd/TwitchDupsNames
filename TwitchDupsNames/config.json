@@ -1,0 +1,5 @@
+﻿{
+	"channel" : "channel name here!",
+	"ignore" : "clean: wether to use default names or style them",
+	"clean" : true
+}
